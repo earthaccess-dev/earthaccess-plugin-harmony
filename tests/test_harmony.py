@@ -293,7 +293,7 @@ class TestSupport:
                 ]
             },
         ) as caps:
-            capabilities = plugin.supports(results)
+            capabilities = plugin.capabilities(results)
         caps.assert_called_once()
         assert capabilities.ok is True
         assert capabilities.operations == {
@@ -322,7 +322,7 @@ class TestSupport:
             "earthaccess_harmony.client.capabilities",
             side_effect=CollectionNotFound("C-NO-HARMONY"),
         ):
-            support = plugin.supports(results)
+            support = plugin.capabilities(results)
         assert support.ok is False
         assert "no Harmony service" in support.reason
 
@@ -334,7 +334,7 @@ class TestSupport:
             "earthaccess_harmony.client.capabilities",
             side_effect=CapabilitiesUnavailable("boom"),
         ):
-            support = plugin.supports(results)
+            support = plugin.capabilities(results)
         assert support.ok is None
 
     def test_request_raises_before_backend_call(self):

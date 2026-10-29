@@ -6,21 +6,16 @@ from dataclasses import asdict, dataclass, field
 from typing import Any
 
 from earthaccess_plugin_spec import Capabilities, Capability, PluginBase
+from earthaccess_plugin_spec.granules import (
+    collection_concept_id,
+    concept_id,
+    peek,
+)
 
 from . import client as _client
 from .job import HarmonyJob
 
 __all__ = ["HarmonyPlugin"]
-
-
-def _peek_collection_id(results: Any) -> str:
-    """Peek the first granule's collection concept id (no materialization)."""
-
-    try:
-        first = next(iter(results), None)
-    except TypeError:
-        return ""
-    return first.get("meta", {}).get("collection-concept-id", "") if first else ""
 
 
 def _operations_from_services(
@@ -138,10 +133,9 @@ class HarmonyPlugin(PluginBase):
         collection_id = ""
         granule_ids: list[str] = []
         for granule in results:
-            meta = granule.get("meta", {})
             if not collection_id:
-                collection_id = meta.get("collection-concept-id", "")
-            granule_ids.append(meta.get("concept-id", ""))
+                collection_id = collection_concept_id(granule)
+            granule_ids.append(concept_id(granule))
         request = _client.build_request(
             collection_id=collection_id,
             granule_ids=granule_ids,
@@ -155,7 +149,9 @@ class HarmonyPlugin(PluginBase):
 
     def _supports(self, results: Any) -> Capabilities:
         short_name = getattr(results, "short_name", "") or ""
-        collection_id = "" if short_name else _peek_collection_id(results)
+        collection_id = (
+            "" if short_name else collection_concept_id(peek(results))
+        )
         label = short_name or collection_id
         if not label:
             return Capabilities(None, reason="need a collection id or short name")

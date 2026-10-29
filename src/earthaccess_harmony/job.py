@@ -48,7 +48,7 @@ class HarmonyJob(Job):
     """A resumable, cancellable Harmony job. The only overrides are the three hooks."""
 
     resumable = True
-    capabilities = frozenset({"cancel", "pause", "resume"})
+    # capabilities ('cancel', 'pause', 'resume') are derived from the overrides.
     poll_every = 2.0
 
     def __init__(self, job_id: str, client: Any) -> None:

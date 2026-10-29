@@ -9,7 +9,7 @@ Verified against ``harmony-py`` 1.8.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from typing import Any
 
 __all__ = [
@@ -26,7 +26,7 @@ _CAPABILITIES_VERSION = "3"
 class CapabilitiesUnavailable(Exception):
     """Raised when the Harmony capabilities check cannot be performed.
 
-    Maps to ``Support(None)``: never hard-block a request on a failed check.
+    Maps to ``Capabilities(None)``: never hard-block a request on a failed check.
     """
 
 
@@ -51,43 +51,24 @@ def make_client(ctx: Any) -> Any:
 
 
 def build_request(
-    *,
-    collection_id: str,
-    granule_ids: Sequence[str],
-    bbox: Sequence[float] | None = None,
-    wkt: str | None = None,
-    temporal: Mapping[str, Any] | None = None,
-    variables: Sequence[str] | None = None,
-    shapefile: str | None = None,
-    output_format: str | None = None,
-    crs: str | None = None,
-    width: int | None = None,
-    height: int | None = None,
-    scale_extent: Sequence[float] | None = None,
-    scale_size: Sequence[float] | None = None,
-    interpolation: str | None = None,
-    average: str | None = None,
-    concatenate: bool | None = None,
-    max_results: int | None = None,
-    dimensions: Sequence[Any] | None = None,
-    extend: Sequence[str] | None = None,
-    destination_url: str | None = None,
-    grid: str | None = None,
-    ignore_errors: bool | None = None,
-    pixel_subset: bool | None = None,
-    service_id: str | None = None,
-    labels: Sequence[str] | None = None,
-    granule_name: Sequence[str] | None = None,
-    skip_preview: bool = False,
+    *, collection_id: str, granule_ids: Sequence[str], **options: Any
 ) -> Any:
-    """Build a ``harmony.Request``, omitting options Harmony should default.
+    """Build a ``harmony.Request`` from plugin ``Options`` values.
 
-    Mirrors the ``harmony-py`` ``Request`` keywords so every Harmony operation
-    (subsetting, reprojection, reformatting, averaging, concatenation) can be
-    expressed through the plugin ``Options``.
+    The plugin's ``Options`` dataclass is the single schema: every option is
+    accepted here and passed through, except the few names that differ from
+    ``harmony-py`` (``bbox``/``wkt`` -> ``spatial``, ``shapefile`` -> ``shape``,
+    ``output_format`` -> ``format``). ``None``/empty values are omitted so
+    Harmony applies its own defaults.
     """
 
     import harmony
+
+    bbox = options.pop("bbox", None)
+    wkt = options.pop("wkt", None)
+    shapefile = options.pop("shapefile", None)
+    output_format = options.pop("output_format", None)
+    skip_preview = options.pop("skip_preview", False)
 
     kwargs: dict[str, Any] = {
         "collection": harmony.Collection(id=collection_id),
@@ -97,10 +78,6 @@ def build_request(
         kwargs["spatial"] = harmony.BBox(*bbox)
     elif wkt is not None:
         kwargs["spatial"] = harmony.WKT(wkt)
-    if temporal is not None:
-        kwargs["temporal"] = temporal
-    if variables:
-        kwargs["variables"] = list(variables)
     if shapefile:
         # harmony-py takes the shapefile path and opens/uploads it itself,
         # inferring the MIME type from the extension. Passing an open handle or
@@ -110,27 +87,12 @@ def build_request(
         kwargs["format"] = output_format
     if skip_preview:
         kwargs["skip_preview"] = True
-    for key, value in (
-        ("crs", crs),
-        ("width", width),
-        ("height", height),
-        ("scale_extent", scale_extent),
-        ("scale_size", scale_size),
-        ("interpolation", interpolation),
-        ("average", average),
-        ("concatenate", concatenate),
-        ("max_results", max_results),
-        ("dimensions", dimensions),
-        ("extend", extend),
-        ("destination_url", destination_url),
-        ("grid", grid),
-        ("ignore_errors", ignore_errors),
-        ("pixel_subset", pixel_subset),
-        ("service_id", service_id),
-        ("labels", labels),
-        ("granule_name", granule_name),
-    ):
-        if value is not None:
+    for key, value in options.items():
+        if key == "variables":
+            # An empty selection means "all variables", i.e. send nothing.
+            if value:
+                kwargs[key] = list(value)
+        elif value is not None:
             kwargs[key] = value
     return harmony.Request(**kwargs)
 

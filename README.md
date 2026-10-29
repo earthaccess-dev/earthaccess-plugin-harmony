@@ -144,12 +144,12 @@ collection supports and raises `UnsupportedCollectionError` early if there is no
 service:
 
 ```python
-ea.plugins.harmony.supports(results)
+ea.plugins.harmony.capabilities(results)
 # Capabilities('harmony supported ATL06', operations=3)
 #   operations: subset_bbox, subset_temporal, subset_variable
 #   formats: application/netcdf4
 
-ea.plugins.harmony.capabilities("ATL06")  # same, by short name
+ea.plugins.harmony.capabilities("ATL06")  # by short name
 ```
 
 ## License
