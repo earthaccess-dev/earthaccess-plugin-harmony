@@ -23,6 +23,17 @@ from .job import HarmonyJob
 __all__ = ["HarmonyPlugin"]
 
 
+_EXAMPLES = {
+    Capability.SUBSET_VARIABLE: (
+        'ea.plugins.harmony.request(results, variables=["blue_var"]).results()'
+    ),
+    Capability.REPROJECT: (
+        'ea.plugins.harmony.request(results, crs="EPSG:3995", '
+        "width=512, height=512).results()"
+    ),
+}
+
+
 def _operations_from_services(
     services: list[dict[str, Any]],
 ) -> tuple[frozenset[Capability], frozenset[str]]:
@@ -186,5 +197,9 @@ class HarmonyPlugin(PluginBase):
             )
         operations, formats = _operations_from_services(services)
         return Capabilities(
-            True, collection=label, operations=operations, formats=formats
+            True,
+            collection=label,
+            operations=operations,
+            formats=formats,
+            examples=_EXAMPLES,
         )
