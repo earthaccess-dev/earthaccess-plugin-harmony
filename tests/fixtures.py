@@ -6,6 +6,7 @@ from contextlib import AbstractContextManager
 from typing import Any
 from unittest import mock
 
+from earthaccess_plugin_spec import Capability, Job
 from earthaccess_plugin_spec.results import GranuleResultSet
 from earthaccess_plugin_spec.testing import Fixtures
 
@@ -103,8 +104,11 @@ def fake_capabilities(client: FakeHarmonyClient):
                             "temporal": True,
                             "variable": True,
                             "shape": True,
-                            "dimension": False,
+                            "dimension": True,
                         },
+                        "reprojection": {"supported": True},
+                        "averaging": {"time": True, "area": True},
+                        "concatenation": True,
                         "outputFormats": [{"mimeType": "application/netcdf4"}],
                     },
                 }
@@ -132,7 +136,42 @@ class HarmonyFixtures(Fixtures):
                 ]
             ),
         )
+        kwargs.setdefault("capability_cases", self.CAPABILITY_CASES)
         super().__init__(**kwargs)
+        for capability, case in self.CAPABILITY_CASES.items():
+            self.capability_assertions.setdefault(
+                capability, self._assert_request(case)
+            )
+
+    CAPABILITY_CASES: dict[Capability, dict[str, Any]] = {
+        Capability.SUBSET_BBOX: {"bbox": (-165.0, 52.0, -140.0, 77.0)},
+        Capability.SUBSET_TEMPORAL: {
+            "temporal": {"start": "2020-01-01", "stop": "2020-01-02"}
+        },
+        Capability.SUBSET_VARIABLE: {"variables": ["blue_var"]},
+        Capability.SUBSET_SHAPE: {"shapefile": "aoi.geojson"},
+        Capability.SUBSET_DIMENSION: {
+            "dimensions": [{"name": "lat", "min": 0, "max": 10}]
+        },
+        Capability.REPROJECT: {"crs": "EPSG:3995", "width": 512, "height": 512},
+        Capability.AVERAGE_TIME: {"average": "time"},
+        Capability.AVERAGE_AREA: {"average": "area"},
+        Capability.CONCATENATE: {"concatenate": True},
+    }
+
+    def _assert_request(self, case: dict[str, Any]):
+        def check(job: Job) -> None:
+            request = self._last_request()
+            for key, value in case.items():
+                assert request[key] == value, (key, request)
+
+        return check
+
+    def _last_request(self) -> dict[str, Any]:
+        for kind, payload in reversed(self.client.calls):
+            if kind == "submit" and "request" in payload:
+                return payload["request"]
+        raise AssertionError("no Harmony request was submitted")
 
     def backend(self) -> AbstractContextManager[Any]:
         from earthaccess_harmony import client as client_mod

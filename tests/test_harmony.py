@@ -300,7 +300,28 @@ class TestSupport:
             Capability.SUBSET_BBOX,
             Capability.SUBSET_VARIABLE,
         }
-        assert "application/netcdf4" in capabilities.formats
+        assert capabilities.formats == frozenset({"netcdf4"})
+
+    def test_unknown_output_format_is_not_advertised(self):
+        plugin = HarmonyPlugin(fake_context())
+        plugin._h = FakeHarmonyClient()
+        results = GranuleResultSet([make_granule(collection_id="C-HARMONY")])
+        with mock.patch(
+            "earthaccess_harmony.client.capabilities",
+            return_value={
+                "services": [
+                    {
+                        "capabilities": {
+                            "outputFormats": [
+                                {"mimeType": "application/octet-stream"}
+                            ]
+                        }
+                    }
+                ]
+            },
+        ):
+            capabilities = plugin.capabilities(results)
+        assert capabilities.formats == frozenset()
 
     def test_capabilities_by_short_name(self):
         plugin = HarmonyPlugin(fake_context())

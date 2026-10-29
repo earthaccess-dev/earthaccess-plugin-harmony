@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from earthaccess_plugin_spec import Capabilities, Capability, PluginBase
+from earthaccess_plugin_spec import (
+    Capabilities,
+    Capability,
+    PluginBase,
+    format_name,
+)
 from earthaccess_plugin_spec.granules import (
     collection_concept_id,
     concept_id,
@@ -48,9 +53,10 @@ def _operations_from_services(
         if caps.get("concatenation"):
             operations.add(Capability.CONCATENATE)
         for output in caps.get("outputFormats", []) or []:
-            mime = output.get("mimeType") or output.get("name")
-            if mime:
-                formats.add(mime)
+            # Normalize backend MIME types to the contract's FORMATS vocabulary.
+            name = format_name(output.get("mimeType") or output.get("name") or "")
+            if name:
+                formats.add(name)
     return frozenset(operations), frozenset(formats)
 
 
