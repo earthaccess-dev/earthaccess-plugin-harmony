@@ -78,10 +78,9 @@ available:
 Not every service supports every operation for every collection; check first:
 
 ```python
-ea.plugins.harmony.capabilities("MUR-JPL-L4-GLOB-v4.1")
-# operations: reproject, subset_bbox, subset_dimension, subset_shape,
-#             subset_temporal, subset_variable
-# formats: application/netcdf, image/jpeg, image/png, image/tiff
+caps = ea.plugins.harmony.capabilities("MUR-JPL-L4-GLOB-v4.1")
+print(caps)         # one summary line per operation
+caps.explain()      # options, output kinds and an example for each
 ```
 
 Example — subset, reproject to a polar grid and return a GeoTIFF:
@@ -145,9 +144,12 @@ service:
 
 ```python
 ea.plugins.harmony.capabilities(results)
-# Capabilities('harmony supported ATL06', operations=3)
-#   operations: subset_bbox, subset_temporal, subset_variable
-#   formats: application/netcdf4
+# harmony supported ATL06
+#   subset_bbox      restrict the result to a spatial extent (bbox or wkt)
+#   subset_temporal  restrict the result to a time interval (temporal)
+#   subset_variable  select a subset of variables; an unknown name raises
+#   formats: netcdf4
+#   hint: use .explain() for options and examples
 
 ea.plugins.harmony.capabilities("ATL06")  # by short name
 ```
